@@ -1,0 +1,38 @@
+version: '3.9'
+services:
+  prod-db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ai_sso_prod
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - prod_db_data:/var/lib/postgresql/data
+
+  prod-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  backend-prod:
+    build: ./backend
+    restart: unless-stopped
+    env_file: environments/production.env
+    depends_on: [prod-db, prod-redis]
+
+  frontend-prod:
+    build: ./frontend
+    environment:
+      - VITE_API_URL=https://accounts.digikenya.co.ke
+
+  nginx-prod:
+    build: ./nginx
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on: [backend-prod, frontend-prod]
+
+volumes:
+  prod_db_data:

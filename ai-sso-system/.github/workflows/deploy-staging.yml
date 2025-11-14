@@ -1,0 +1,27 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build & Deploy Staging
+        run: |
+          export DB_PASSWORD=${{ secrets.STAGING_DB_PASSWORD }}
+          export SECRET_KEY=${{ secrets.STAGING_SECRET_KEY }}
+          docker-compose -f docker-compose.staging.yml down
+          docker-compose -f docker-compose.staging.yml up -d --build --remove-orphans
+          docker system prune -f
+
+      - name: Run DB Migrations
+        run: |
+          docker-compose -f docker-compose.staging.yml exec backend-staging alembic upgrade head

@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Or use plain CSS if you don't want Tailwind */
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
