@@ -11,8 +11,10 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - staging_db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Expose on host (optional, for debugging)
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ai_sso_staging"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -23,6 +25,8 @@ services:
     image: redis:7-alpine
     container_name: staging-redis
     restart: unless-stopped
+    ports:
+      - "6380:6379"  # Expose on host (optional, for debugging)
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -32,10 +36,24 @@ services:
       - staging-network
 
   backend-staging:
-    build: ./backend
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: backend-staging
     restart: unless-stopped
-    env_file: environments/staging.env
+    env_file: 
+      - environments/staging.env
+    environment:
+      # Override/ensure critical variables
+      DB_HOST: staging-db
+      DB_PORT: 5432
+      DB_NAME: ai_sso_staging
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: staging-redis
+      REDIS_PORT: 6379
+    ports:
+      - "8000:8000"  # Expose backend port
     depends_on:
       staging-db:
         condition: service_healthy
@@ -49,10 +67,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    volumes:
+      - ./backend:/app  # Mount for development (remove in production)
 
   frontend-staging:
     build:
       context: ./frontend
+      dockerfile: Dockerfile
       args:
         VITE_API_URL: https://staging-accounts.digikenya.co.ke
     container_name: frontend-staging
@@ -61,7 +82,9 @@ services:
       - staging-network
 
   nginx-staging:
-    build: ./nginx
+    build: 
+      context: ./nginx
+      dockerfile: Dockerfile
     container_name: nginx-staging
     restart: unless-stopped
     ports:
@@ -69,8 +92,8 @@ services:
       - "8443:443"
     volumes:
       - ./frontend/dist:/usr/share/nginx/html:ro
-      - ./certbot/staging:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
+      - ./certbot/staging:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
     depends_on:
       - backend-staging
       - frontend-staging
