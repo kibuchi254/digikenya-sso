@@ -8,7 +8,7 @@ class Config:
     ALGORITHM = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES = 30
     REFRESH_TOKEN_EXPIRE_DAYS = 7
-    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@db:5432/ai_sso_db")
+    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://digi:Elijah10519@host:5432/staging-sso")
     REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
     EMAIL_HOST = os.getenv("EMAIL_HOST")
     EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))

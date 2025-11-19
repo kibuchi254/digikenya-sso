@@ -15,3 +15,4 @@ celery==5.3.6  # For background tasks like email/sms
 flower==2.0.1  # Optional for Celery monitoring
 gunicorn
 uvicorn[standard]
+asyncpg==0.29.0
