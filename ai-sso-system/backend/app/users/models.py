@@ -1,29 +1,38 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from app.db import Base # Assuming 'Base' is your declarative base
+from sqlalchemy.sql import func
+from app.db import Base
 
-# --- ASSOCIATION OBJECT CLASS (Resolves ArgumentError) ---
-# This class acts as the join table, allowing you to add extra attributes
-# (though none are currently defined). It MUST have a Primary Key.
+# --- USER MODEL ---
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=True)  # Nullable for OAuth users
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    tenant = relationship("Tenant", back_populates="users")
+    roles = relationship("UserRole", back_populates="user")
+
+# --- ASSOCIATION OBJECT CLASS ---
 class UserRole(Base):
     """Association object for the many-to-many relationship between User and Role."""
     __tablename__ = "user_roles_assoc"
 
-    # Composite Primary Key: Combination of user_id and role_id must be unique
-    user_id = Column(
-        Integer, 
-        ForeignKey("users.id"), 
-        primary_key=True # FIX: Must be part of the primary key
-    )
-    role_id = Column(
-        Integer, 
-        ForeignKey("roles.id"), 
-        primary_key=True # FIX: Must be part of the primary key
-    )
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    role_id = Column(Integer, ForeignKey("roles.id"), primary_key=True)
 
     # Relationships to the parent objects
-    user = relationship("User", back_populates="roles") # Links back to the User object
-    role = relationship("Role", back_populates="users") # Links back to the Role object
+    user = relationship("User", back_populates="roles")
+    role = relationship("Role", back_populates="users")
 
 # --- ROLE MODEL ---
 class Role(Base):
@@ -36,6 +45,4 @@ class Role(Base):
 
     # Relationships
     tenant = relationship("Tenant", back_populates="roles")
-    
-    # Relationship to the association object (UserRole)
     users = relationship("UserRole", back_populates="role")
