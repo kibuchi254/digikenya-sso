@@ -13,3 +13,5 @@ python-multipart==0.0.5
 aiohttp==3.9.1
 celery==5.3.6  # For background tasks like email/sms
 flower==2.0.1  # Optional for Celery monitoring
+gunicorn
+uvicorn[standard]
